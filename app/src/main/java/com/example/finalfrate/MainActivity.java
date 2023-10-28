@@ -53,8 +53,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        firebaseDatabase = FirebaseDatabase.getInstance(
-                "https://safesky-ca98b-default-rtdb.europe-west1.firebasedatabase.app");
+        firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference("locations");
 
         mapView = findViewById(R.id.mapView);
@@ -83,12 +82,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot locationSnapshot : dataSnapshot.getChildren()) {
-                    LatLng latLng1 = locationSnapshot.getValue(LatLng.class);
+                    MyLatLong myLatLng = locationSnapshot.getValue(MyLatLong.class);
 
                     // Create markers on the map for each saved location
-                    if (latLng1 != null) {
+                    if (myLatLng != null) {
+                        LatLng latLng = new LatLng(myLatLng.latitude, myLatLng.longitude);
                         MarkerOptions markerOptions = new MarkerOptions()
-                                .position(latLng1)
+                                .position(latLng)
                                 .title("Location")
                                 .snippet("Saved Location Description");
                         Marker newMarker = map.addMarker(markerOptions);
@@ -160,11 +160,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         databaseReference = database.getReference("locations");
 
-        // Generate a unique key for each coordinate entry
+        LatLng cord = coordinatesToSend; // Your LatLng object
+        MyLatLong myLatLng = new MyLatLong(latLng.latitude, latLng.longitude);
         String key = databaseReference.push().getKey();
 
         if (key != null) {
-            databaseReference.child(key).setValue(latLng);
+            databaseReference.child(key).setValue(myLatLng);
         }
     }
 
