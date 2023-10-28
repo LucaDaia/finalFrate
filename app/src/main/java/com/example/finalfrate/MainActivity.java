@@ -41,6 +41,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /// handler && runnable
     private Handler locationCheckHandler;
     private Runnable locationCheckRunnable;
-    private static final int LOCATION_CHECK_INTERVAL = 20 * 1000; // 20 seconds in milliseconds
+    private static final int LOCATION_CHECK_INTERVAL = 600 * 1000; // 60 seconds in milliseconds
 
     private static final int REQUEST_LOCATION_PERMISSION = 1;
 
@@ -90,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void run() {
                 // Check if the user's location is inside any circles
                 checkUserLocation();
+                System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
                 // Schedule the runnable to run again after LOCATION_CHECK_INTERVAL
                 locationCheckHandler.postDelayed(this, LOCATION_CHECK_INTERVAL);
             }
@@ -113,6 +115,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap = map;
         // You can customize the map and add markers, polylines, etc. here.
 // Inside the onMapReady method
+
+        googleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+            @Override
+            public void onMyLocationChange(@NonNull Location location) {
+                // Get the user's current location
+                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
+                // Zoom to the user's location
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12.5f));
+
+                // Remove the listener to avoid unnecessary zooming
+                googleMap.setOnMyLocationChangeListener(null);
+            }
+        });
+
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -126,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         MarkerOptions markerOptions = new MarkerOptions()
                                 .position(latLng)
                                 .title(myLatLng.description)
-                                .snippet(myLatLng.description);
+                                .snippet(Utils.formatMyDate(myLatLng.date));
                         Marker newMarker = map.addMarker(markerOptions);
                         markers.add(newMarker);
 
@@ -165,8 +182,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // Add a marker at the clicked location
                 MarkerOptions markerOptions = new MarkerOptions()
                         .position(latLng)
-                        .title("Your Marker Title")
-                        .snippet("Marker Description");
+                        .title(description)
+                        .snippet(String.valueOf(new Date()));
 
                 coordinatesToSend = latLng; // for button click event
 
@@ -180,19 +197,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         // Set up a location change listener to zoom to the user's location
-        googleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-            @Override
-            public void onMyLocationChange(@NonNull Location location) {
-                // Get the user's current location
-                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-                // Zoom to the user's location
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12.5f));
-
-                // Remove the listener to avoid unnecessary zooming
-                googleMap.setOnMyLocationChangeListener(null);
-            }
-        });
     }
 
     @Override
@@ -207,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         databaseReference = database.getReference("locations");
 
         LatLng cord = coordinatesToSend; // Your LatLng object
-        MyLatLong myLatLng = new MyLatLong(latLng.latitude, latLng.longitude, description);
+        MyLatLong myLatLng = new MyLatLong(latLng.latitude, latLng.longitude, description, new Date());
         String key = databaseReference.push().getKey();
 
         if (key != null) {
